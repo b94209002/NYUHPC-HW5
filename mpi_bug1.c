@@ -25,7 +25,7 @@ if (rank == 0) {
     printf("Numtasks=%d. Only 2 needed. Ignoring extra...\n",numtasks);
   dest = rank + 1;
   source = dest;
-  tag = rank;
+  tag = 1;
   rc = MPI_Send(&outmsg, 1, MPI_CHAR, dest, tag, MPI_COMM_WORLD);
   printf("Sent to task %d...\n",dest);
   rc = MPI_Recv(&inmsg, 1, MPI_CHAR, source, tag, MPI_COMM_WORLD, &Stat);
@@ -35,7 +35,9 @@ if (rank == 0) {
 else if (rank == 1) {
   dest = rank - 1;
   source = dest;
-  tag = rank;
+  tag = 1;
+//  rc = MPI_Send(&outmsg, 1, MPI_CHAR, dest, tag, MPI_COMM_WORLD);
+//  printf("Sent to task %d...\n",dest);
   rc = MPI_Recv(&inmsg, 1, MPI_CHAR, source, tag, MPI_COMM_WORLD, &Stat);
   printf("Received from task %d...\n",source);
   rc = MPI_Send(&outmsg, 1, MPI_CHAR, dest, tag, MPI_COMM_WORLD);
