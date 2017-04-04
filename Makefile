@@ -1,6 +1,6 @@
 CC=mpicc
 FLAGS=-O3
-EXECS= mpi_solved1 mpi_solved2 mpi_solved3 mpi_solved4
+EXECS= mpi_solved1 mpi_solved2 mpi_solved3 mpi_solved4 mpi_solved5
 
 all: ${EXECS}
 
@@ -14,6 +14,9 @@ mpi_solved3: mpi_bug3.c
 	${CC} ${FLAGS} $^ -o $@
 
 mpi_solved4: mpi_bug4.c
+	${CC} ${FLAGS} $^ -o $@
+
+mpi_solved5: mpi_bug5.c
 	${CC} ${FLAGS} $^ -o $@
 
 clean:

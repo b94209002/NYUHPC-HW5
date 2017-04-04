@@ -64,5 +64,6 @@ if (rank == 1) {
   }
 
 MPI_Finalize();
+return 0;
 }
 

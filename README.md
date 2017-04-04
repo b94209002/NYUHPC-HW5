@@ -21,3 +21,11 @@ mpi_bug4:
 
 The master rank does not see the mpi_reduce. Add the end line before the master rank print the answer. 
 
+mpi_bug5: 
+
+For openmpi, the first 10000 number of communication is done in O(0.0010) sec but for rest of communication, it takes times to finish, because most of communication does not finish with the receive node. Hence the communication speed is reduced. 
+
+For mvapich2, the communication stacks the internet at the beginning, so it cannot reach speed as fast as we obtain in the beginning of openmpi.
+
+Therefore, we should maintain same amount of computation for each node, so that we can have efficient communication.  
+
