@@ -17,3 +17,7 @@ mpi_bug3:
 
 This file does not include mpi_initial and mpi_finalize. 
 
+mpi_bug4: 
+
+The master rank does not see the mpi_reduce. Add the end line before the master rank print the answer. 
+

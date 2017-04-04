@@ -78,6 +78,8 @@ if (taskid == MASTER){
     printf("\n");
     offset = offset + chunksize;
     }
+
+  MPI_Reduce(&mysum, &sum, 1, MPI_FLOAT, MPI_SUM, MASTER, MPI_COMM_WORLD);
   printf("*** Final sum= %e ***\n",sum);
 
   }  /* end of master section */
