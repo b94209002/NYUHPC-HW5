@@ -11,4 +11,6 @@ mpi_bug1:
 
 mpi_bug2:
  
+The alpha and beta does not share the same data type, so the datatype in mpi_irecv, MPI_float, is modified. 
+
 
