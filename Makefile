@@ -22,6 +22,8 @@ mpi_solved5: mpi_bug5.c
 mpi_solved6: mpi_bug6.c
 	${CC} ${FLAGS} $^ -o $@
 
+mpi_solved7: mpi_bug7.c
+	${CC} ${FLAGS} $^ -o $@
 
 clean:
 	rm -f ${EXECS}
