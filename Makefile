@@ -1,6 +1,6 @@
 CC=mpicc
 FLAGS=-O3
-EXECS= mpi_solved1 mpi_solved2 mpi_solved3 mpi_solved4 mpi_solved5 mpi_solved6 mpi_solved7
+EXECS= mpi_solved1 mpi_solved2 mpi_solved3 mpi_solved4 mpi_solved5 mpi_solved6 mpi_solved7 jacobi-mpi2D
 
 all: ${EXECS}
 
@@ -23,6 +23,9 @@ mpi_solved6: mpi_bug6.c
 	${CC} ${FLAGS} $^ -o $@
 
 mpi_solved7: mpi_bug7.c
+	${CC} ${FLAGS} $^ -o $@
+
+jacobi-mpi2D: jacobi-mpi2D.c
 	${CC} ${FLAGS} $^ -o $@
 
 clean:
