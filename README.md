@@ -29,3 +29,14 @@ For mvapich2, the communication stacks the internet at the beginning, so it cann
 
 Therefore, we should maintain same amount of computation for each node, so that we can have efficient communication.  
 
+mpi_bug6: 
+
+The bugs appear in mpi_waitall since the input considers all the local variables. 
+
+For rank 0 and 1, there are 2xRESP requests, starting from 0 - 2xRESP, so both ranks have nreqs = 2xRESP and should start with 0 , not RESP in rank 1.
+
+For rank 2, there is no request, so the nreqs = 0.
+
+For rank 3, there are RESP requests, so there is no need to change. 
+
+ 

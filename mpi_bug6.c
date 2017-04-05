@@ -54,7 +54,7 @@ if (rank < 2) {
     }
   if (rank == 1) {
     src = 0;
-    offset = REPS;
+    offset = 0;
     }
   dest = src;
 
@@ -77,6 +77,7 @@ if (rank > 1) {
 
 /* Task 2 does the blocking send operation */
   if (rank == 2) {
+    nreqs = 0;
     dest = 3;
     for (i=0; i<REPS; i++) {
       MPI_Send(&rank, 1, MPI_INT, dest, tag1, COMM);
