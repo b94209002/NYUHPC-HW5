@@ -66,6 +66,9 @@ int main (int argc, char **argv)
 	}
 	i2= 1; i1= 0;
 
+        double  time1,time2;
+        time1 = MPI_Wtime();
+
 	res = residual(m,h*h,x[i1],rhs);
 
 	crit = 1.e-4*res; n = 0;
@@ -80,15 +83,19 @@ int main (int argc, char **argv)
 		}	
 	}
 
-	blocking_communication(x[i1], m, info, buf[0], buf[1]); 
+	non_blocking_communication(x[i1], m, info, buf[0], buf[1]); 
 
 	res = residual(m,h*h,x[i1],rhs);
 	
 	if (info.rank == 0 ) printf("niter = %li, residul = %10e \n", n, res);		
 	}
 
+        time2 = MPI_Wtime();
+        double elapsed = time2 - time1;
 	// print final output
-	//printf("Numer of iteration %li, residual = %10e, Time elapsed is %f secs. \n", n, sqrt(res), elapsed);
+	printf("Numer of iteration %li, residual = %10e, Time elapsed is %f secs. \n", n, res, elapsed);
+
+
 
 
         for(k = 0; k < 2 ; k++){
