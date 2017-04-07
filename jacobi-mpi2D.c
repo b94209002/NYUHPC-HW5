@@ -14,7 +14,7 @@ struct node
         MPI_Comm comm;
        };
 void non_blocking_communication(double **x, int m,struct node info, double** recvbuf, double** sendbuf);
-
+void blocking_communication(double **x, int m,struct node info, double** recvbuf, double** sendbuf);
 
 int main (int argc, char **argv)
 {
@@ -69,7 +69,7 @@ int main (int argc, char **argv)
 	res = residual(m,h*h,x[i1],rhs);
 
 	crit = 1.e-4*res; n = 0;
-        if (info.rank == 0) printf("myid = %li, residul = %10e \n", info.rank, res);
+        if (info.rank == 0) printf("myid = %i, residul = %10e \n", info.rank, res);
 
 	while (n < maxiter && res > crit ) {
 	n++ ; i = i2; i2 = i1; i1 = i; // use the different data
@@ -80,7 +80,7 @@ int main (int argc, char **argv)
 		}	
 	}
 
-	non_blocking_communication(x[i1], m, info, buf[0], buf[1]); 
+	blocking_communication(x[i1], m, info, buf[0], buf[1]); 
 
 	res = residual(m,h*h,x[i1],rhs);
 	
@@ -181,6 +181,54 @@ for (i=0; i<m; i++)
         x[m+1][i+1] = recvbuf[3][i];
 }
 
+
+}
+void blocking_communication(double **x, int m,struct node info, double** recvbuf, double** sendbuf) {
+MPI_Status stats[4];
+int i,tag = 1;
+
+if (info.w != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        sendbuf[0][i] = x[i+1][1];
+}
+if (info.e != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        sendbuf[1][i] = x[i+1][m];
+}
+
+if (info.s != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        sendbuf[2][i] = x[1][i+1];
+}
+
+if (info.n != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        sendbuf[3][i] = x[m][i+1];
+}
+
+MPI_Sendrecv(&sendbuf[0][0], m, MPI_DOUBLE, info.w, tag, &recvbuf[1][0], m, MPI_DOUBLE, info.e,tag, info.comm, &stats[0]);
+MPI_Sendrecv(&sendbuf[1][0], m, MPI_DOUBLE, info.e, tag, &recvbuf[0][0], m, MPI_DOUBLE, info.w,tag, info.comm, &stats[1]);
+MPI_Sendrecv(&sendbuf[2][0], m, MPI_DOUBLE, info.s, tag, &recvbuf[3][0], m, MPI_DOUBLE, info.n,tag, info.comm, &stats[2]);
+MPI_Sendrecv(&sendbuf[3][0], m, MPI_DOUBLE, info.n, tag, &recvbuf[2][0], m, MPI_DOUBLE, info.s,tag, info.comm, &stats[3]);
+
+if (info.w != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        x[i+1][0] = recvbuf[0][i];
+}
+if (info.e != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        x[i+1][m+1] = recvbuf[1][i];
+}
+
+if (info.s != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        x[0][i+1] = recvbuf[2][i];
+}
+
+if (info.n != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        x[m+1][i+1] = recvbuf[3][i];
+}
 
 }
 
