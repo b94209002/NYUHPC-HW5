@@ -128,7 +128,6 @@ int main( int argc, char *argv[])
 
   /* every processor writes its result to a file */
 
-/*
   {
     FILE* fd = NULL;
     char filename[256];
@@ -142,11 +141,11 @@ int main( int argc, char *argv[])
     }
 
     for(i = 0; i < N; ++i)
-      fprintf(fd, "  %f\n", vec4[i]);
+      fprintf(fd, "  %i \n", vec3[i]);
 
     fclose(fd);
   }
-  */
+
   free(vec); free(vec2); free(vec3) ; 
   free(sendcount);free(recvcount); 
   free(sdispls); free(rdispls);
