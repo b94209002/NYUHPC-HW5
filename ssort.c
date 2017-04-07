@@ -74,7 +74,7 @@ int main( int argc, char *argv[])
   	vec2[i] = vec3[m*i];
   free(vec3);
   }
-  vec2[num-1] = 2147483647; //INT_MAX
+  vec2[num-1] = 2147483647; //INT_MAX in case to over count the sdispls.
 
   /* root process broadcasts splitters */
   MPI_Bcast( vec2, num, MPI_INT, 0, MPI_COMM_WORLD );
@@ -86,11 +86,10 @@ int main( int argc, char *argv[])
   sdispls = calloc(num, sizeof(int));
   id = 0; sdispls[0] = 0;
 
-   
   for (i=0; i < N; i++){
 	if (vec[i] >= vec2[id] ){
-	 	sdispls[id+1] = i; 
-		id++ ;
+                id++;
+	 	sdispls[id] = i; 
 	}
   }
 
@@ -119,10 +118,6 @@ int main( int argc, char *argv[])
   }
 
   vec3 = calloc(N, sizeof(int));
-
-//  for (i=0; i < N; i++)
-//      vec3[i] = 12331534;
-
 
   MPI_Alltoallv(&vec[0], sendcount, sdispls, MPI_INT, &vec3[0], recvcount, rdispls, MPI_INT, MPI_COMM_WORLD);
 
