@@ -84,20 +84,20 @@ int main( int argc, char *argv[])
 
   sendcount = calloc(num, sizeof(int));
   sdispls = calloc(num, sizeof(int));
-  id = 0;
+  id = 0; sdispls[0] = 0;
 
-  
+   
   for (i=0; i < N; i++){
 	if (vec[i] >= vec2[id] ){
-	 	sdispls[id] = i; 
+	 	sdispls[id+1] = i; 
 		id++ ;
 	}
   }
 
-  sdispls[id] = N;
-  sendcount[0] = sdispls[0];
-  for (i=1; i < num; i++)
-      sendcount[i] = sdispls[i] - sdispls[i-1] ;   
+  for (i=0; i < num; i++)
+      sendcount[i] = sdispls[i+1] - sdispls[i] ;   
+  sendcount[num-1] = N - sdispls[num-1] ;
+  
 
   /* send and receive: either you use MPI_AlltoallV, or
    * (and that might be easier), use an MPI_Alltoall to share
@@ -119,6 +119,10 @@ int main( int argc, char *argv[])
   }
 
   vec3 = calloc(N, sizeof(int));
+
+//  for (i=0; i < N; i++)
+//      vec3[i] = 12331534;
+
 
   MPI_Alltoallv(&vec[0], sendcount, sdispls, MPI_INT, &vec3[0], recvcount, rdispls, MPI_INT, MPI_COMM_WORLD);
 
