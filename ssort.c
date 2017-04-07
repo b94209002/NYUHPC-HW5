@@ -23,7 +23,7 @@ int main( int argc, char *argv[])
 {
   int rank,num;
   int i, N, id, m  ;
-  int *vec, *vec2, *vec3, *vec4;
+  int *vec, *vec3, *vec2, *sendcount, *sdispls, *recvcount, *rdispls;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &num);
@@ -48,68 +48,87 @@ int main( int argc, char *argv[])
 
   /* randomly sample s entries from vector or select local splitters,
    * i.e., every N/P-th entry of the sorted vector */
+    vec2 = calloc(m, sizeof(int));	
 
-  vec2 = calloc(num*m, sizeof(int));
   for (i = 0; i < m; ++i) {
-    id = rand()%num ;
+    id = rand()%N ;
     vec2[i] = vec[id];
   }
- 
-
-
 
   /* every processor communicates the selected entries
    * to the root processor; use for instance an MPI_Gather */
 
-  MPI_Gather( &vec2[0],m, MPI_INT, vec2, m, MPI_INT, 0, MPI_COMM_WORLD);
+  if (0 == rank) vec3 = calloc(m*num, sizeof(int));
+
+  MPI_Gather( &vec2[0],m, MPI_INT, &vec3[0], m, MPI_INT, 0, MPI_COMM_WORLD);
+  
+  free(vec2); vec2 = calloc(num, sizeof(int));
 
   /* root processor does a sort, determinates splitters that
    * split the data into P buckets of approximately the same size */
 
-  if (rank ==0 )
-  qsort( vec2, m*num,sizeof(int), compare);
+  if (rank ==0 ){
+  qsort( vec3, m*num,sizeof(int), compare);
 
-
+  for (i = 0; i < num; ++i)
+  	vec2[i] = vec3[m*i];
+  free(vec3);
+  }
+  vec2[num-1] = 2147483647; //INT_MAX
 
   /* root process broadcasts splitters */
-  MPI_Bcast( vec2, m*num, MPI_INT, 0, MPI_COMM_WORLD );
+  MPI_Bcast( vec2, num, MPI_INT, 0, MPI_COMM_WORLD );
 
   /* every processor uses the obtained splitters to decide
    * which integers need to be sent to which other processor (local bins) */
 
-  vec3 = calloc(num, sizeof(int));
+  sendcount = calloc(num, sizeof(int));
+  sdispls = calloc(num, sizeof(int));
   id = 0;
+
+  
   for (i=0; i < N; i++){
 	if (vec[i] >= vec2[id] ){
-	 	vec3[id] = i; 
+	 	sdispls[id] = i; 
 		id++ ;
 	}
   }
-  vec2[0] = vec3[0];
-  for (i=1; i < num; i++)
-  	vec2[i] = vec3[i] - vec3[i-1];
 
+  sdispls[id] = N;
+  sendcount[0] = sdispls[0];
+  for (i=1; i < num; i++)
+      sendcount[i] = sdispls[i] - sdispls[i-1] ;   
 
   /* send and receive: either you use MPI_AlltoallV, or
    * (and that might be easier), use an MPI_Alltoall to share
    * with every processor how many integers it should expect,
    * and then use MPI_Send and MPI_Recv to exchange the data */
+  recvcount = calloc(num, sizeof(int));
 
-  MPI_Alltoall(&vec3, 1, MPI_INT, vec3,1,MPI_INT, MPI_COMM_WORLD);
+  MPI_Alltoall(&sendcount[0], 1, MPI_INT, &recvcount[0], 1,MPI_INT, MPI_COMM_WORLD);
+
   N = 0;
-  for (i = 0; i < N; i++ )
-	N += vec[2];
-  
+  for (i = 0; i < num; i++ ){
+	N += recvcount[i];
+  }
 
-  MPI_Alltoallv(&vec, vec3, vec2, MPI_INT, vec4, vec3, vec2, MPI_INT, MPI_COMM_WORLD);
+  rdispls = calloc(num, sizeof(int));
+  rdispls[0] = 0;
+  for (i = 0; i < num-1; i++ ){
+        rdispls[i+1] = rdispls[i] + recvcount[i];
+  }
+
+  vec3 = calloc(N, sizeof(int));
+
+  MPI_Alltoallv(&vec[0], sendcount, sdispls, MPI_INT, &vec3[0], recvcount, rdispls, MPI_INT, MPI_COMM_WORLD);
 
   /* do a local sort */
 
-  qsort(vec4, N, sizeof(int), compare);
+  qsort(vec3, N, sizeof(int), compare);
 
   /* every processor writes its result to a file */
 
-
+/*
   {
     FILE* fd = NULL;
     char filename[256];
@@ -127,8 +146,11 @@ int main( int argc, char *argv[])
 
     fclose(fd);
   }
+  */
+  free(vec); free(vec2); free(vec3) ; 
+  free(sendcount);free(recvcount); 
+  free(sdispls); free(rdispls);
 
-  free(vec); free(vec2); free(vec3) ; free(vec4);
   MPI_Finalize();
   return 0;
 }
