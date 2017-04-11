@@ -42,4 +42,12 @@ For rank 3, there are RESP requests, so there is no need to change.
 mpi_bug7: 
 
 For the mpi_bcast, the counts does not agree to all the rank, so its hangs because some ranks expect more data form rank 0, but it does not. 
+
+jacobi-mpi2D:
+
+
+
+
+ssort: 
+
  

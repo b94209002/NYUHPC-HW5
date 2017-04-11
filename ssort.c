@@ -22,7 +22,7 @@ static int compare(const void *a, const void *b)
 int main( int argc, char *argv[])
 {
   int rank,num;
-  int i, N, id, m  ;
+  int i, N, id, m ,n,n0;
   int *vec, *vec3, *vec2, *sendcount, *sdispls, *recvcount, *rdispls;
 
   MPI_Init(&argc, &argv);
@@ -31,7 +31,15 @@ int main( int argc, char *argv[])
 
   /* Number of random numbers per processor (this should be increased
    * for actual tests or could be passed in through the command line */
-  N = 100; m = N/10;
+
+  for (n = 0; n < 5;n++){
+  N = 10;
+  for (i = 0; i<n;i++) N = N*10;
+  n0=N;
+  m = N/10;
+  MPI_Barrier( MPI_COMM_WORLD );
+  double  time1,time2;
+  time1 = MPI_Wtime();
 
   vec = calloc(N, sizeof(int));
   /* seed random number generator differently on every core */
@@ -41,7 +49,7 @@ int main( int argc, char *argv[])
   for (i = 0; i < N; ++i) {
     vec[i] = rand();
   }
-  printf("rank: %d, first entry: %d\n", rank, vec[0]);
+//  printf("rank: %d, first entry: %d\n", rank, vec[0]);
 
   /* sort locally */
   qsort(vec, N, sizeof(int), compare);
@@ -126,7 +134,7 @@ int main( int argc, char *argv[])
   qsort(vec3, N, sizeof(int), compare);
 
   /* every processor writes its result to a file */
-
+/*
   {
     FILE* fd = NULL;
     char filename[256];
@@ -144,6 +152,13 @@ int main( int argc, char *argv[])
 
     fclose(fd);
   }
+*/
+        time2 = MPI_Wtime();
+        double elapsed = time2 - time1;
+        // print final output
+        if (0 == rank) printf("For N = %i, Time elapsed is %f secs. \n", n0, elapsed);
+
+   }
 
   free(vec); free(vec2); free(vec3) ; 
   free(sendcount);free(recvcount); 
