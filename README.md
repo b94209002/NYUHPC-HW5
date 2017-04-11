@@ -45,9 +45,29 @@ For the mpi_bcast, the counts does not agree to all the rank, so its hangs becau
 
 jacobi-mpi2D:
 
+Initial error = 8.00e+03
 
+TACC: Setting up parallel environment for MVAPICH2+mpispawn.
+
+non-blocking 
+
+ibrun ./jacobi-mpi2D 1000 1000
+
+non-blocking
+Numer of iteration 1000, residual = 7.950528e+03, Time elapsed is 7.469062 secs.
+
+ibrun ./jacobi-mpi2D-blocking 1000 1000
+
+blocking
+Numer of iteration 1000, residual = 7.950528e+03, Time elapsed is 7.564017 secs.
 
 
 ssort: 
+
+For N = 1000, Time elapsed is 0.023300 secs.
+For N = 10000, Time elapsed is 0.010456 secs.
+For N = 100000, Time elapsed is 0.106580 secs.
+For N = 1000000, Time elapsed is 1.246840 secs.
+For N = 10000000, Time elapsed is 14.287363 secs.
 
  

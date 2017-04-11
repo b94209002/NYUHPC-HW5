@@ -33,7 +33,7 @@ int main( int argc, char *argv[])
    * for actual tests or could be passed in through the command line */
 
   for (n = 0; n < 5;n++){
-  N = 10;
+  N = 1000;
   for (i = 0; i<n;i++) N = N*10;
   n0=N;
   m = N/10;
@@ -105,6 +105,12 @@ int main( int argc, char *argv[])
       sendcount[i] = sdispls[i+1] - sdispls[i] ;   
   sendcount[num-1] = N - sdispls[num-1] ;
   
+  if (63 == rank) {
+    for (i=0;i<num;i++)
+    printf("test for sendcount %i, ndispls = %i  \n",sendcount[i], sdispls[i]);
+  }
+
+
 
   /* send and receive: either you use MPI_AlltoallV, or
    * (and that might be easier), use an MPI_Alltoall to share
@@ -158,11 +164,13 @@ int main( int argc, char *argv[])
         // print final output
         if (0 == rank) printf("For N = %i, Time elapsed is %f secs. \n", n0, elapsed);
 
-   }
+  
 
   free(vec); free(vec2); free(vec3) ; 
   free(sendcount);free(recvcount); 
   free(sdispls); free(rdispls);
+
+  }
 
   MPI_Finalize();
   return 0;
