@@ -64,10 +64,10 @@ Numer of iteration 1000, residual = 7.950528e+03, Time elapsed is 7.564017 secs.
 
 ssort: 
 
-For N = 1000, Time elapsed is 0.023300 secs.
-For N = 10000, Time elapsed is 0.010456 secs.
-For N = 100000, Time elapsed is 0.106580 secs.
-For N = 1000000, Time elapsed is 1.246840 secs.
-For N = 10000000, Time elapsed is 14.287363 secs.
+For N = 1000, Time elapsed is 0.023300 secs.  
+For N = 10000, Time elapsed is 0.010456 secs.  
+For N = 100000, Time elapsed is 0.106580 secs.  
+For N = 1000000, Time elapsed is 1.246840 secs.   
+For N = 10000000, Time elapsed is 14.287363 secs.   
 
  
