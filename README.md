@@ -68,6 +68,12 @@ Strong scaling test on Stampede
 |non-blocking| 63.7981 | 19.3214 | 7.6027 | 1.9186 | 00|
 |blocking| 63.8024 | 19.3377| 7.5161 | 1.8861 | 00| 
 
+Weak scaling test on Stampede
+
+|N procs | 1 | 4 | 16 | 64 | 256 |
+|---|---|---|---|---|---|
+|non-blocking| 0.3191 | 0.2984 | 0.3366 | 0.3372 | 00 |
+|blocking| 0.3187 | 0.3012 | 0.3396 | 0.3387 | 00 | 
 
 ssort: 
 
