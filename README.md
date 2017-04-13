@@ -81,10 +81,9 @@ Set N per node = 256 fixed. (Unit second)
 
 ssort: 
 
-For N = 1000, Time elapsed is 0.023300 secs.  
-For N = 10000, Time elapsed is 0.010456 secs.  
-For N = 100000, Time elapsed is 0.106580 secs.  
-For N = 1000000, Time elapsed is 1.246840 secs.   
-For N = 10000000, Time elapsed is 14.287363 secs.   
+Sample sort test for differrnt N on each node with 64 cores.
 
- 
+| N /core  | 1000 | 10000 | 100000 | 1000000 | 10000000 |
+|---|---|---|---|---|---|
+|time | 0.023300 | 0.010456 | 0.106580 | 1.246840 | 14.287363 |
+
