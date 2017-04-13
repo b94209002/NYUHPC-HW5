@@ -63,14 +63,18 @@ Numer of iteration 1000, residual = 7.950528e+03, Time elapsed is 7.564017 secs.
 
 Strong scaling test on Stampede
 
-|N procs | 1 | 4 | 16 | 64 | 256 | 
+Set total N = 4096 fixed.   
+
+|N procs(N per node) | 1(4096) | 4(2048) | 16(1024) | 64(512) | 256(256) | 
 |---|---|---|---|---|---|
 |non-blocking| 63.7981 | 19.3214 | 7.6027 | 1.9186 | 00|
 |blocking| 63.8024 | 19.3377| 7.5161 | 1.8861 | 00| 
 
 Weak scaling test on Stampede
 
-|N procs | 1 | 4 | 16 | 64 | 256 |
+Set N per node = 256 fixed.  
+
+|N procs(total N) | 1(256) | 4(512) | 16(1024) | 64(2048) | 256(4096) |
 |---|---|---|---|---|---|
 |non-blocking| 0.3191 | 0.2984 | 0.3366 | 0.3372 | 00 |
 |blocking| 0.3187 | 0.3012 | 0.3396 | 0.3387 | 00 | 
