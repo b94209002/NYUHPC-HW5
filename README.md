@@ -83,7 +83,7 @@ ssort:
 
 Sample sort test for differrnt N on each node with 64 cores.
 
-| N /core  | 1000 | 10000 | 100000 | 1000000 | 10000000 |
+| N /core  | 1E3 | 1E4 | 1E5 | 1E6 | 1E7 |
 |---|---|---|---|---|---|
 |time | 0.023300 | 0.010456 | 0.106580 | 1.246840 | 14.287363 |
 
