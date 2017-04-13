@@ -61,6 +61,13 @@ ibrun ./jacobi-mpi2D-blocking 1000 1000
 blocking
 Numer of iteration 1000, residual = 7.950528e+03, Time elapsed is 7.564017 secs.
 
+Strong scaling test on Stampede
+
+|N procs | 1 | 4 | 16 | 64 | 256 | 
+|---|---|---|---|---|---|
+|non-blocking| 63.7981 | 19.3214 | 7.6027 | 1.9186 | 00|
+|blocking| 63.8024 | 19.3377| 7.5161 | 1.8861 | 00| 
+
 
 ssort: 
 
