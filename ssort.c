@@ -32,9 +32,9 @@ int main( int argc, char *argv[])
   /* Number of random numbers per processor (this should be increased
    * for actual tests or could be passed in through the command line */
 
-  for (n = 0; n < 5;n++){
-  N = 1000;
-  for (i = 0; i<n;i++) N = N*10;
+//  for (n = 0; n < 5;n++){
+  N = 100;
+// for (i = 0; i<n;i++) N = N*10;
   n0=N;
   m = N/10;
   MPI_Barrier( MPI_COMM_WORLD );
@@ -168,7 +168,7 @@ int main( int argc, char *argv[])
   free(sendcount);free(recvcount); 
   free(sdispls); free(rdispls);
 
-  }
+//  }
 
   MPI_Finalize();
   return 0;
