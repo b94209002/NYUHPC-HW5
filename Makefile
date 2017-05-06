@@ -1,11 +1,15 @@
-CC=mpicc
+mpc=mpicc
+CC=gcc
 FLAGS=-O3
-EXECS= jacobi-mpi2D 
+EXECS= jacobi jacobi-mpi2D 
 
 all: ${EXECS}
 
 jacobi-mpi2D: jacobi-mpi2D.c
-	${CC} ${FLAGS} $^ -o $@
+	${mpc} ${FLAGS} $^ -o $@
+
+jacobi: jacobi.c
+	$(CC) $^ $(CFLAGS) -lm -o $@
 
 clean:
 	rm -f ${EXECS}
