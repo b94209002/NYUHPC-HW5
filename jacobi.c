@@ -14,22 +14,31 @@ double residual (double **x, double **rhs, int N, double invhsq);
 int main (int argc, char **argv)
 {
   int nlevel;
-  int i,j,n,m;
+  int i,j,n;
   double d, l, r, tmp;// idiagonal, right, left, right-hand-side
   double ***x, ***rhs; //  variable
-  double prod,h,hsq,invhsq,a,b,res,rres; // grid size, initial, end, resdiual
-  int m0, m2,m1, maxiter;// size, max iteration, iteration index
+  double prod,h,a,b,res,rres; // grid size, initial, end, resdiual
+  int m0,m1,m2,maxiter;// size, max iteration, iteration index
   double crit; // critera 
+
+  int *m; 
+  double *hsq, *invhsq;
 
         a = 0.; 
         b = 1.;
 	maxiter = 10; 
         nlevel = 1; m0 =10;
+	m = malloc(nlevel * sizeof(int));
+ 	hsq = malloc(nlevel * sizeof(double));
+	invhsq = malloc(nlevel * sizeof(double));
 	x = malloc(nlevel * sizeof(double **));
 	rhs = malloc(nlevel * sizeof(double **));
         for (i = 0; i<nlevel; i++){
-		m = m0*2^nlevel - 1;
-                m2 = m+2;
+		m[i] = m0*2^nlevel - 1;
+                m2 = m[i]+2;
+		h = (b-a)/((double)m2 - 1.0) ;
+		hsq[i] = h*h; 
+		invhsq[i] = 1.0/h/h;
         	x[i] = malloc(m2 * sizeof(double *));
 		rhs[i] = malloc(m2 * sizeof(double *));
 		for (j =0; j<m2; j++ ){
@@ -38,8 +47,6 @@ int main (int argc, char **argv)
 		}
 
 	} 
-
-	h = (b-a)/((double)m+1.0) ;hsq = h*h; invhsq = 1.0/hsq; 
         // initial matrix
         for (n = 0; n < nlevel; n++) {
   		for (j = 0; j < m2; ++j) {
@@ -52,14 +59,18 @@ int main (int argc, char **argv)
 //  	timestamp_type time1, time2;
 //  	get_timestamp(&time1);
 	int myid = 0;	
-	res = residual(x[0],rhs[0],m,invhsq); crit = 1.e-4*res; n = 0;
+ 	res = residual(x[0],rhs[0],m[0],invhsq[0]); crit = 1.e-4*res; n = 0;
         printf("myid = %li, residul = %10e \n", myid, res);
-	while (n < maxiter && res > crit ) {
+/*	while (n < maxiter && res > crit ) {
 		n++ ; 
  		jacobi(x[0],rhs[0],m,hsq,1);
 		res = residual(x[0],rhs[0],m,invhsq);
 		printf("Numer of iteration %li, residual = %10e. \n", n, sqrt(res));
 	}
+*/
+      
+  	vcycle(x,rhs,0,nlevel, m, hsq,invhsq);
+
 
 //	get_timestamp(&time2);
 //  	double elapsed = timestamp_diff_in_seconds(time1,time2);
@@ -70,11 +81,13 @@ int main (int argc, char **argv)
 
         for (n = 0; n < nlevel ; n++) {
 		for(i = 0; i < m2; i++) { 
-			free(x[n][i]); 
+			free(x[n][i]);free(rhs[n][i]);
 		}
-		free(x[n]);
+		free(x[n]);free(rhs[n][i]);
 	}
-	free(x);
+	free(x);free(rhs);
+	free(m);free(hsq);free(invhsq);
+
 
   return 0;
 }
@@ -118,24 +131,22 @@ void  vcycle(double ***u, double ***rhs, int lv, int nlv, int *m, double* hsq, d
 
 if ( lv  == nlv - 1) { 
 // maximum level
-
-        jacobi(u[lv],rhs[lv],m[lv],hsq[lv],10);
+        jacobi(u[lv],rhs[lv],m[lv],hsq[lv],1);
         res = residual(u[lv],rhs[lv],m[lv],invhsq[lv]);
         printf("Multigrid level %i, residual = %10e. \n", lv+1, sqrt(res));
-
 } else {
+
+
 
 	jacobi(u[lv],rhs[lv],m[lv],hsq[lv],10);
 	restriction(u[lv], u[lv+1], m[lv+1]);
-	vcycle(***u,***rhs,lv+1,nlv,m, hsq,invhsq);
+	vcycle(u,rhs,lv+1,nlv,m, hsq,invhsq);
 	prolongation(u[lv+1], u[lv], m[lv]);
 	jacobi(u[lv],rhs[lv],m[lv],hsq[lv],10);
 	res = residual(u[lv],rhs[lv],m[lv],invhsq[lv]);
         printf("Multigrid level %i, residual = %10e. \n", lv+1, sqrt(res));
 
 }
-
-
 }
 
 
