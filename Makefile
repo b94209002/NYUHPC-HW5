@@ -1,14 +1,14 @@
 mpc=mpicc
 CC=gcc
 FLAGS=-O3
-EXECS= jacobi jacobi-mpi2D 
+EXECS= MultiGrid_v_cycle jacobi-mpi2D 
 
 all: ${EXECS}
 
 jacobi-mpi2D: jacobi-mpi2D.c
 	${mpc} ${FLAGS} $^ -o $@
 
-jacobi: jacobi.c
+MultiGrid_v_cycle: MultiGrid_v_cycle.c
 	$(CC) $^ $(CFLAGS) -lm -o $@
 
 clean:

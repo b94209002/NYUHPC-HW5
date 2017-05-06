@@ -62,8 +62,9 @@ int main (int argc, char **argv)
 	int myid = 0;	
  	res = residual(x[0],rhs[0],m[0],invhsq[0]); crit = 1.e-4*res; n = 0;
         printf("myid = %li, residul = %10e \n", myid, res);
-      
-  	vcycle(x,rhs,0,nlevel, m, hsq,invhsq);
+     
+        for (n = 0; n< 2; n++) 
+  		vcycle(x,rhs,0,nlevel, m, hsq,invhsq);
 
 //	get_timestamp(&time2);
 //  	double elapsed = timestamp_diff_in_seconds(time1,time2);
@@ -119,30 +120,30 @@ void prolongation(double **crse, double **fine, int N) { // fine N
 
 }
 void  vcycle(double ***u, double ***rhs, int lv, int nlv, int *m, double* hsq, double *invhsq )
-{ double res, crit = 1.e-2;
+{ double res, crit = 1.e-5;
 
 	res = residual(u[lv],rhs[lv],m[lv],invhsq[lv]); 
+        printf("Multigrid level %i, residual = %10e. \n", lv+1, res);
+
 	crit = crit * res;
 
 if ( lv  == nlv - 1) { 
 // maximum level
-        jacobi(u[lv],rhs[lv],m[lv],hsq[lv],10,crit);
+        jacobi(u[lv],rhs[lv],m[lv],hsq[lv],100,crit*1e-5);
         res = residual(u[lv],rhs[lv],m[lv],invhsq[lv]);
         printf("Multigrid level %i, residual = %10e. \n", lv+1, res);
 } else {
 
 	jacobi(u[lv],rhs[lv],m[lv],hsq[lv],5,crit);
-        res = residual(u[lv],rhs[lv],m[lv],invhsq[lv]);
 	restriction(u[lv], u[lv+1], m[lv+1]);
 	vcycle(u,rhs,lv+1,nlv,m, hsq,invhsq);
 	prolongation(u[lv+1], u[lv], m[lv]);
-	jacobi(u[lv],rhs[lv],m[lv],hsq[lv],10*(nlv-lv),crit);
+	jacobi(u[lv],rhs[lv],m[lv],hsq[lv],10000*(lv+1),crit);
 	res = residual(u[lv],rhs[lv],m[lv],invhsq[lv]);
         printf("Multigrid level %i, residual = %10e. \n", lv+1, res);
 
 }
 }
-
 
 void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit)
 {
@@ -153,7 +154,7 @@ void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit)
   double **unew = calloc(sizeof(double*), N+2);
   for (i = 1; i < N+1; i++) unew[i] = calloc(sizeof(double), N+2);
 
-  res = residual(u,rhs,N,1/hsq);
+  res = residual(u,rhs,N,1.0/hsq);
 
   while (n < maxit && res > crit) { 
 	n++;
@@ -166,14 +167,14 @@ void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit)
      		memcpy(u[j], unew[j], (N+2)*sizeof(double));
 	}
 
-	if ( n%10 == 10) res = residual(u,rhs,N,1/hsq); 
+	if ( n%10 == 0) res = residual(u,rhs,N,1.0/hsq);
   }
 
-  if (res < crit) 
-	printf("Jaocbi iteration converges to criterion = %d \n", res);
-  else
+  if (res < crit){ 
+	printf("Jaocbi iteration converges to criterion = %10e. \n", res);
+  } else {
 	printf("Jaocbi iteration reaches max itereation = %i \n", maxit);
-
+  }
 
   for (i = 1; i < N+1; i++) {
 	free(unew[i]); 
