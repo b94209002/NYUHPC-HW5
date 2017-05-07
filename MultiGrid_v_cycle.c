@@ -27,7 +27,7 @@ int main (int argc, char **argv)
         a = 0.; 
         b = 1.;
 	maxiter = 10; 
-        nlevel = 10; m0 =2;
+        nlevel = 5; m0 =2;
 	m = malloc(nlevel * sizeof(int));
  	hsq = malloc(nlevel * sizeof(double));
 	invhsq = malloc(nlevel * sizeof(double));

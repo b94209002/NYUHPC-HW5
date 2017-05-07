@@ -4,10 +4,11 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <omp.h>
 
 void restriction(double **fine, double **crse, int N);
 void prolongation(double **crse, double **fine, int N);
-void  vcycle(double ***u, double ***rhs, int lv, int nlv, int *m, double* hsq, double *invhsq );
+void vcycle(double ***u, double ***rhs, int lv, int nlv, int *m, double* hsq, double *invhsq );
 void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit);
 double residual (double **x, double **rhs, int N, double invhsq);
 
@@ -27,7 +28,7 @@ int main (int argc, char **argv)
         a = 0.; 
         b = 1.;
 	maxiter = 10; 
-        nlevel = 10; m0 =2;
+        nlevel = 5; m0 =2;
 	m = malloc(nlevel * sizeof(int));
  	hsq = malloc(nlevel * sizeof(double));
 	invhsq = malloc(nlevel * sizeof(double));
@@ -59,18 +60,22 @@ int main (int argc, char **argv)
 	}
 //  	timestamp_type time1, time2;
 //  	get_timestamp(&time1);
+
 	int myid = 0;	
- 	res = residual(x[0],rhs[0],m[0],invhsq[0]); crit = 1.e-4*res; n = 0;
-        printf("myid = %li, residul = %10e \n", myid, res);
+#pragma omp parallel shared(x,rhs,m,hsq,invhsq,crit,maxiter) private(myid)
+	{
+		myid = omp_get_thread_num();
+ 		res = residual(x[0],rhs[0],m[0],invhsq[0]); crit = 1.e-4*res; n = 0;
+        	printf("myid = %li, residul = %10e \n", myid, res);
      
-        for (n = 0; n< 2; n++) 
-  		vcycle(x,rhs,0,nlevel, m, hsq,invhsq);
+	  	vcycle(x,rhs,0,nlevel, m, hsq,invhsq);
 
 //	get_timestamp(&time2);
 //  	double elapsed = timestamp_diff_in_seconds(time1,time2);
 	
 	// print final output
 //	printf("Numer of iteration %li, residual = %10e, Time elapsed is %f secs. \n", n, sqrt(res), elapsed);
+	}
 
         for (n = 0; n < nlevel ; n++) {
 		for(i = 0; i < m2; i++) { 
@@ -89,6 +94,7 @@ void restriction(double **fine, double **crse, int N) { // coarse N
   int i,j,it,jt;
   double a = 4.0/16.0, b = 2.0 / 16.0, c = 1.0/16.0; 
 
+#pragma omp parallel for default(shared) private(i,j,it,jt) schedule(dynamic,10)
   for (j = 1; j < N+1 ; ++j ){
 	jt = 2*j;
 	for (i = 1; i < N + 1 ; ++i){
@@ -103,6 +109,8 @@ void restriction(double **fine, double **crse, int N) { // coarse N
 void prolongation(double **crse, double **fine, int N) { // fine N
   int i,j,it,jt;
   double c1 = .5 ,c2 = .25;
+
+#pragma omp parallel for default(shared) private(i,j,it,jt) schedule(dynamic,10)
   for (j = 1; j < N +1; ++j ){
         jt = j/2;
         for (i = 1; i < N +1; ++i){                
@@ -138,7 +146,7 @@ if ( lv  == nlv - 1) {
 	restriction(u[lv], u[lv+1], m[lv+1]);
 	vcycle(u,rhs,lv+1,nlv,m, hsq,invhsq);
 	prolongation(u[lv+1], u[lv], m[lv]);
-	jacobi(u[lv],rhs[lv],m[lv],hsq[lv],10000*(lv+1),crit);
+	jacobi(u[lv],rhs[lv],m[lv],hsq[lv],100*(lv+1),crit);
 	res = residual(u[lv],rhs[lv],m[lv],invhsq[lv]);
         printf("Multigrid level %i, residual = %10e. \n", lv+1, res);
 
@@ -151,18 +159,22 @@ void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit)
   /* Jacobi damping parameter -- plays an important role in MG */
   double omega = 2./3.;
   double res;
-  double **unew = calloc(sizeof(double*), N+2);
+  double **unew;
+  unew = calloc(sizeof(double*), N+2);
   for (i = 1; i < N+1; i++) unew[i] = calloc(sizeof(double), N+2);
 
   res = residual(u,rhs,N,1.0/hsq);
 
   while (n < maxit && res > crit) { 
 	n++;
+	#pragma omp parallel for default(shared) private(i,j) schedule(dynamic,10)
 	for (j = 1; j < N+1; j++){
 		for (i = 1; i < N+1; i++){
 			unew[j][i]  = u[j][i] +omega*.25*( rhs[j][i]*hsq + u[j-1][i]+ u[j][i-1] + u[j][i+1]+ u[j+1][i]- 4*u[j][i]);
 		}	
 	}
+	#pragma omp barrier
+	#pragma omp parallel for default(shared) private(j) schedule(dynamic,10)
 	for (j = 1; j < N+1; j++ ) {
      		memcpy(u[j], unew[j], (N+2)*sizeof(double));
 	}
@@ -179,22 +191,23 @@ void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit)
   for (i = 1; i < N+1; i++) {
 	free(unew[i]); 
   }
-  free (unew);
+  free(unew);
 }
 
 double residual (double **x, double **rhs, int N, double invhsq) {
 
-int i,j;
-double tmp,res;
+	int i,j;
+	double tmp,res;
 
-res = 0.0; // boundary condition on (0)
+	res = 0.0; // boundary condition on (0)
 
-for (j = 1; j < N + 1; ++j) {
-	for (i = 1; i < N + 1; ++i) {
-		tmp = rhs[j][i] + (x[j-1][i] + x[j][i-1] - 4*x[j][i] + x[j][i+1] + x[j+1][i])*invhsq;
-		res = res + tmp*tmp;
-	}
-}
+#pragma omp parallel for default(shared) private(i,j,tmp) schedule(dynamic,10) reduction(+:res)  
+	for (j = 1; j < N + 1; ++j) {
+		for (i = 1; i < N + 1; ++i) {
+			tmp = rhs[j][i] + (x[j-1][i] + x[j][i-1] - 4*x[j][i] + x[j][i+1] + x[j+1][i])*invhsq;
+			res = res + tmp*tmp;
+		}
+	}	
 
 return sqrt(res);
 }
