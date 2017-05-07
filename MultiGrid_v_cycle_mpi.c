@@ -4,25 +4,40 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include "mpi.h"
+#define COMM MPI_COMM_WORLD
 
+struct node get_info(int num);
+struct node
+       {
+        int rank, n, s, e, w;
+        MPI_Comm comm;
+       };
 void restriction(double **fine, double **crse, int N);
 void prolongation(double **crse, double **fine, int N);
-void  vcycle(double ***u, double ***rhs, int lv, int nlv, int *m, double* hsq, double *invhsq );
-void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit);
+void vcycle(double ***u, double ***rhs, int lv, int nlv, int *m, double* hsq, double *invhsq, struct node info);
+void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit, struct node info);
 double residual (double **x, double **rhs, int N, double invhsq);
+void non_blocking_communication(double **x, int m,struct node info, double** recvbuf, double** sendbuf);
+void blocking_communication(double **x, int m,struct node info, double** recvbuf, double** sendbuf);
 
 int main (int argc, char **argv)
 {
   int nlevel;
-  int i,j,n;
+  int i,j,n,num;
   double d, l, r, tmp;// idiagonal, right, left, right-hand-side
   double ***x, ***rhs; //  variable
   double prod,h,a,b,res,rres; // grid size, initial, end, resdiual
   int m0,m1,m2,maxiter;// size, max iteration, iteration index
   double crit; // critera 
+  struct node info;
 
   int *m; 
   double *hsq, *invhsq;
+
+  MPI_Init(&argc,&argv);
+  MPI_Comm_size(COMM, &num);
+  info = get_info(sqrt(num));
 
         a = 0.; 
         b = 1.;
@@ -63,8 +78,7 @@ int main (int argc, char **argv)
  	res = residual(x[0],rhs[0],m[0],invhsq[0]); crit = 1.e-4*res; n = 0;
         printf("myid = %li, residul = %10e \n", myid, res);
      
-        for (n = 0; n< 2; n++) 
-  		vcycle(x,rhs,0,nlevel, m, hsq,invhsq);
+  	vcycle(x,rhs,0,nlevel, m, hsq,invhsq,info);
 
 //	get_timestamp(&time2);
 //  	double elapsed = timestamp_diff_in_seconds(time1,time2);
@@ -81,9 +95,27 @@ int main (int argc, char **argv)
 	free(x);free(rhs);
 	free(m);free(hsq);free(invhsq);
 
-
+  MPI_Finalize();
   return 0;
 }
+
+struct node get_info(int num){
+
+struct node info;
+MPI_Comm_rank(COMM, &info.rank);
+
+int dim[2], bc[2];
+dim[0] = num; dim[1] = num; bc[0] = 0; bc[1] =0;
+// define communication information
+   MPI_Cart_create(COMM, 2, dim, bc, 0 , &info.comm);
+   MPI_Cart_shift(info.comm, 1, -1, &info.e, &info.w );
+   MPI_Cart_shift(info.comm, 1, 1, &info.w, &info.e );
+   MPI_Cart_shift(info.comm, 0, -1, &info.n, &info.s );
+   MPI_Cart_shift(info.comm, 0, 1, &info.s, &info.n );
+//
+   return info;
+   }
+
 
 void restriction(double **fine, double **crse, int N) { // coarse N
   int i,j,it,jt;
@@ -119,7 +151,7 @@ void prolongation(double **crse, double **fine, int N) { // fine N
   }
 
 }
-void  vcycle(double ***u, double ***rhs, int lv, int nlv, int *m, double* hsq, double *invhsq )
+void vcycle(double ***u, double ***rhs, int lv, int nlv, int *m, double* hsq, double *invhsq, struct node info)
 { double res, crit = 1.e-5;
 
 	res = residual(u[lv],rhs[lv],m[lv],invhsq[lv]); 
@@ -129,30 +161,34 @@ void  vcycle(double ***u, double ***rhs, int lv, int nlv, int *m, double* hsq, d
 
 if ( lv  == nlv - 1) { 
 // maximum level
-        jacobi(u[lv],rhs[lv],m[lv],hsq[lv],100,crit*1e-5);
+        jacobi(u[lv],rhs[lv],m[lv],hsq[lv],100,crit*1e-5,info);
         res = residual(u[lv],rhs[lv],m[lv],invhsq[lv]);
         printf("Multigrid level %i, residual = %10e. \n", lv+1, res);
 } else {
 
-	jacobi(u[lv],rhs[lv],m[lv],hsq[lv],5,crit);
+	jacobi(u[lv],rhs[lv],m[lv],hsq[lv],5,crit,info);
 	restriction(u[lv], u[lv+1], m[lv+1]);
-	vcycle(u,rhs,lv+1,nlv,m, hsq,invhsq);
+	vcycle(u,rhs,lv+1,nlv,m, hsq,invhsq,info);
 	prolongation(u[lv+1], u[lv], m[lv]);
-	jacobi(u[lv],rhs[lv],m[lv],hsq[lv],10000*(lv+1),crit);
+	jacobi(u[lv],rhs[lv],m[lv],hsq[lv],10000*(lv+1),crit,info);
 	res = residual(u[lv],rhs[lv],m[lv],invhsq[lv]);
         printf("Multigrid level %i, residual = %10e. \n", lv+1, res);
 
 }
 }
 
-void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit)
+void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit, struct node info)
 {
   int i, j,n = 0;
   /* Jacobi damping parameter -- plays an important role in MG */
   double omega = 2./3.;
   double res;
   double **unew = calloc(sizeof(double*), N+2);
+  double **sbuf = calloc(sizeof(double*), 4), **rbuf = calloc(sizeof(double*), 4); 
+
   for (i = 1; i < N+1; i++) unew[i] = calloc(sizeof(double), N+2);
+  for (i = 1; i < 4; i++) sbuf[i] = calloc(sizeof(double), N+2);
+  for (i = 1; i < 4; i++) rbuf[i] = calloc(sizeof(double), N+2);
 
   res = residual(u,rhs,N,1.0/hsq);
 
@@ -163,6 +199,8 @@ void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit)
 			unew[j][i]  = u[j][i] +omega*.25*( rhs[j][i]*hsq + u[j-1][i]+ u[j][i-1] + u[j][i+1]+ u[j+1][i]- 4*u[j][i]);
 		}	
 	}
+
+	non_blocking_communication(unew, N, info, sbuf, rbuf);
 	for (j = 1; j < N+1; j++ ) {
      		memcpy(u[j], unew[j], (N+2)*sizeof(double));
 	}
@@ -176,15 +214,16 @@ void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit)
 	printf("Jaocbi iteration reaches max itereation = %i \n", maxit);
   }
 
-  for (i = 1; i < N+1; i++) {
-	free(unew[i]); 
-  }
-  free (unew);
+  for (i = 1; i < N+1; i++) free(unew[i]); 
+  for (i = 1; i < 4; i++) free(sbuf[i]);
+  for (i = 1; i < 4; i++) free(rbuf[i]);
+
+  free(unew);free(sbuf);free(rbuf);
 }
 
 double residual (double **x, double **rhs, int N, double invhsq) {
 
-int i,j;
+int i,j,ierr;
 double tmp,res;
 
 res = 0.0; // boundary condition on (0)
@@ -196,5 +235,117 @@ for (j = 1; j < N + 1; ++j) {
 	}
 }
 
+ierr = MPI_Allreduce(&res , &tmp, 1, MPI_DOUBLE, MPI_SUM, COMM);
+res = sqrt(tmp);
+
 return sqrt(res);
 }
+
+void non_blocking_communication(double **x, int m,struct node info, double** recvbuf, double** sendbuf) {
+
+MPI_Request reqs[8];
+MPI_Status stats[8];
+int i,tag = 1;
+
+MPI_Irecv(&recvbuf[0][0], m, MPI_DOUBLE, info.w,tag, info.comm, &reqs[0]);
+MPI_Irecv(&recvbuf[1][0], m, MPI_DOUBLE, info.e,tag, info.comm, &reqs[1]);
+MPI_Irecv(&recvbuf[2][0], m, MPI_DOUBLE, info.s,tag, info.comm, &reqs[2]);
+MPI_Irecv(&recvbuf[3][0], m, MPI_DOUBLE, info.n,tag, info.comm, &reqs[3]);
+
+
+if (info.w != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        sendbuf[0][i] = x[i+1][1];
+}
+if (info.e != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        sendbuf[1][i] = x[i+1][m];
+}
+
+if (info.s != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        sendbuf[2][i] = x[1][i+1];
+}
+
+if (info.n != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        sendbuf[3][i] = x[m][i+1];
+}
+
+MPI_Isend(&sendbuf[0][0], m, MPI_DOUBLE, info.w, tag, info.comm, &reqs[4]);
+MPI_Isend(&sendbuf[1][0], m, MPI_DOUBLE, info.e, tag, info.comm, &reqs[5]);
+MPI_Isend(&sendbuf[2][0], m, MPI_DOUBLE, info.s, tag, info.comm, &reqs[6]);
+MPI_Isend(&sendbuf[3][0], m, MPI_DOUBLE, info.n, tag, info.comm, &reqs[7]);
+
+MPI_Waitall(8, reqs, stats);
+
+if (info.w != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        x[i+1][0] = recvbuf[0][i];
+}
+if (info.e != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        x[i+1][m+1] = recvbuf[1][i];
+}
+
+if (info.s != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        x[0][i+1] = recvbuf[2][i];
+}
+
+if (info.n != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        x[m+1][i+1] = recvbuf[3][i];
+}
+
+
+}
+void blocking_communication(double **x, int m,struct node info, double** recvbuf, double** sendbuf) {
+MPI_Status stats[4];
+int i,tag = 1;
+
+if (info.w != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        sendbuf[0][i] = x[i+1][1];
+}
+if (info.e != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        sendbuf[1][i] = x[i+1][m];
+}
+
+if (info.s != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        sendbuf[2][i] = x[1][i+1];
+}
+
+if (info.n != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        sendbuf[3][i] = x[m][i+1];
+}
+
+MPI_Sendrecv(&sendbuf[0][0], m, MPI_DOUBLE, info.w, tag, &recvbuf[1][0], m, MPI_DOUBLE, info.e,tag, info.comm, &stats[0]);
+MPI_Sendrecv(&sendbuf[1][0], m, MPI_DOUBLE, info.e, tag, &recvbuf[0][0], m, MPI_DOUBLE, info.w,tag, info.comm, &stats[1]);
+MPI_Sendrecv(&sendbuf[2][0], m, MPI_DOUBLE, info.s, tag, &recvbuf[3][0], m, MPI_DOUBLE, info.n,tag, info.comm, &stats[2]);
+MPI_Sendrecv(&sendbuf[3][0], m, MPI_DOUBLE, info.n, tag, &recvbuf[2][0], m, MPI_DOUBLE, info.s,tag, info.comm, &stats[3]);
+
+if (info.w != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        x[i+1][0] = recvbuf[0][i];
+}
+if (info.e != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        x[i+1][m+1] = recvbuf[1][i];
+}
+
+if (info.s != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        x[0][i+1] = recvbuf[2][i];
+}
+
+if (info.n != MPI_PROC_NULL) {
+for (i=0; i<m; i++)
+        x[m+1][i+1] = recvbuf[3][i];
+}
+
+}
+
