@@ -42,7 +42,7 @@ int main (int argc, char **argv)
         a = 0.; 
         b = 1.;
 	maxiter = 10; 
-        nlevel = 5; m0 =2;
+        nlevel = 2; m0 = 10;
 	m = malloc(nlevel * sizeof(int));
  	hsq = malloc(nlevel * sizeof(double));
 	invhsq = malloc(nlevel * sizeof(double));
@@ -77,8 +77,8 @@ int main (int argc, char **argv)
 	int myid = 0;	
  	res = residual(x[0],rhs[0],m[0],invhsq[0]); crit = 1.e-4*res; n = 0;
         printf("myid = %li, residul = %10e \n", myid, res);
-     
-  	vcycle(x,rhs,0,nlevel, m, hsq,invhsq,info);
+   
+ 	vcycle(x,rhs,0,nlevel, m, hsq,invhsq,info);
 
 //	get_timestamp(&time2);
 //  	double elapsed = timestamp_diff_in_seconds(time1,time2);
@@ -113,6 +113,7 @@ dim[0] = num; dim[1] = num; bc[0] = 0; bc[1] =0;
    MPI_Cart_shift(info.comm, 0, -1, &info.n, &info.s );
    MPI_Cart_shift(info.comm, 0, 1, &info.s, &info.n );
 //
+
    return info;
    }
 
@@ -184,11 +185,13 @@ void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit,
   double omega = 2./3.;
   double res;
   double **unew = calloc(sizeof(double*), N+2);
-  double **sbuf = calloc(sizeof(double*), 4), **rbuf = calloc(sizeof(double*), 4); 
+  double **sbuf , **rbuf;
+  sbuf = calloc(sizeof(double*), 4);
+  rbuf = calloc(sizeof(double*), 4); 
 
-  for (i = 1; i < N+1; i++) unew[i] = calloc(sizeof(double), N+2);
-  for (i = 1; i < 4; i++) sbuf[i] = calloc(sizeof(double), N+2);
-  for (i = 1; i < 4; i++) rbuf[i] = calloc(sizeof(double), N+2);
+  for (i = 0; i < N+2; i++) unew[i] = calloc(sizeof(double), N+2);
+  for (i = 0; i < 4; i++) sbuf[i] = calloc(sizeof(double), N);
+  for (i = 0; i < 4; i++) rbuf[i] = calloc(sizeof(double), N);
 
   res = residual(u,rhs,N,1.0/hsq);
 
@@ -200,8 +203,8 @@ void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit,
 		}	
 	}
 
-	non_blocking_communication(unew, N, info, sbuf, rbuf);
-	for (j = 1; j < N+1; j++ ) {
+        non_blocking_communication(unew, N, info, rbuf, sbuf);
+	for (j = 0; j < N+2; j++ ) {
      		memcpy(u[j], unew[j], (N+2)*sizeof(double));
 	}
 
@@ -214,9 +217,9 @@ void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit,
 	printf("Jaocbi iteration reaches max itereation = %i \n", maxit);
   }
 
-  for (i = 1; i < N+1; i++) free(unew[i]); 
-  for (i = 1; i < 4; i++) free(sbuf[i]);
-  for (i = 1; i < 4; i++) free(rbuf[i]);
+  for (i = 0; i < N+2; i++) free(unew[i]); 
+  for (i = 0; i < 4; i++) free(sbuf[i]);
+  for (i = 0; i < 4; i++) free(rbuf[i]);
 
   free(unew);free(sbuf);free(rbuf);
 }
@@ -247,11 +250,11 @@ MPI_Request reqs[8];
 MPI_Status stats[8];
 int i,tag = 1;
 
+
 MPI_Irecv(&recvbuf[0][0], m, MPI_DOUBLE, info.w,tag, info.comm, &reqs[0]);
 MPI_Irecv(&recvbuf[1][0], m, MPI_DOUBLE, info.e,tag, info.comm, &reqs[1]);
 MPI_Irecv(&recvbuf[2][0], m, MPI_DOUBLE, info.s,tag, info.comm, &reqs[2]);
 MPI_Irecv(&recvbuf[3][0], m, MPI_DOUBLE, info.n,tag, info.comm, &reqs[3]);
-
 
 if (info.w != MPI_PROC_NULL) {
 for (i=0; i<m; i++)
@@ -271,7 +274,6 @@ if (info.n != MPI_PROC_NULL) {
 for (i=0; i<m; i++)
         sendbuf[3][i] = x[m][i+1];
 }
-
 MPI_Isend(&sendbuf[0][0], m, MPI_DOUBLE, info.w, tag, info.comm, &reqs[4]);
 MPI_Isend(&sendbuf[1][0], m, MPI_DOUBLE, info.e, tag, info.comm, &reqs[5]);
 MPI_Isend(&sendbuf[2][0], m, MPI_DOUBLE, info.s, tag, info.comm, &reqs[6]);
