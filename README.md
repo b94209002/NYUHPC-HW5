@@ -2,4 +2,4 @@
 ### Mu-Hua Chien 
 ### mhc431@nyu.edu
 
-# Generalize 2-D Multigrid Implementation
+### Generalize 2-D Multigrid Implementation
