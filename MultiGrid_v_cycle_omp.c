@@ -98,7 +98,7 @@ void restriction(double **fine, double **crse, int N) { // coarse N
   int i,j,it,jt;
   double a = 4.0/16.0, b = 2.0 / 16.0, c = 1.0/16.0; 
 
-#pragma omp parallel for default(shared) private(i,it,jt) schedule(dynamic,2)
+#pragma omp parallel for default(shared) private(i,it,jt) schedule(dynamic,8)
   for (j = 1; j < N+1 ; ++j ){
 	jt = 2*j;
 	for (i = 1; i < N + 1 ; ++i){
@@ -114,7 +114,7 @@ void prolongation(double **crse, double **fine, int N) { // fine N
   int i,j,it,jt;
   double c1 = .5 ,c2 = .25;
 
-#pragma omp parallel for default(shared) private(i,j,it,jt) schedule(dynamic,2)
+#pragma omp parallel for default(shared) private(i,j,it,jt) schedule(dynamic,8)
   for (j = 1; j < N +1; ++j ){
         jt = j/2;
         for (i = 1; i < N +1; ++i){                
@@ -141,7 +141,7 @@ void  vcycle(double ***u, double ***rhs, int lv, int nlv, int *m, double* hsq, d
 
 if ( lv  == nlv - 1) { 
 // maximum level
-        jacobi(u[lv],rhs[lv],m[lv],hsq[lv],100,crit*1e-5);
+        jacobi(u[lv],rhs[lv],m[lv],hsq[lv],1,crit*1e-5);
         res = residual(u[lv],rhs[lv],m[lv],invhsq[lv]);
         printf("Multigrid level %i, residual = %10e. \n", lv+1, res);
 } else {
@@ -171,14 +171,14 @@ void jacobi(double **u, double **rhs, int N, double hsq, int maxit, double crit)
 
   while (n < maxit && res > crit) { 
 	n++;
-	#pragma omp parallel for default(shared) private(i,j) schedule(dynamic,2)
+	#pragma omp parallel for default(shared) private(i,j) schedule(dynamic,8)
 	for (j = 1; j < N+1; j++){
 		for (i = 1; i < N+1; i++){
 			unew[j][i]  = u[j][i] +omega*.25*( rhs[j][i]*hsq + u[j-1][i]+ u[j][i-1] + u[j][i+1]+ u[j+1][i]- 4*u[j][i]);
 		}	
 	}
 	#pragma omp barrier
-	#pragma omp parallel for default(shared) private(j) schedule(dynamic,2)
+	#pragma omp parallel for default(shared) private(j) schedule(dynamic,8)
 	for (j = 1; j < N+1; j++ ) {
      		memcpy(u[j], unew[j], (N+2)*sizeof(double));
 	}
@@ -205,7 +205,7 @@ double residual (double **x, double **rhs, int N, double invhsq) {
 
 	res = 0.0; // boundary condition on (0)
 
-#pragma omp parallel for default(shared) private(i,j,tmp) schedule(dynamic,2) reduction(+:res)  
+#pragma omp parallel for default(shared) private(i,j,tmp) schedule(dynamic,8) reduction(+:res)  
 	for (j = 1; j < N + 1; ++j) {
 		for (i = 1; i < N + 1; ++i) {
 			tmp = rhs[j][i] + (x[j-1][i] + x[j][i-1] - 4*x[j][i] + x[j][i+1] + x[j+1][i])*invhsq;
