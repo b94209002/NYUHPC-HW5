@@ -5,6 +5,7 @@
 #include <math.h>
 #include <string.h>
 #include <omp.h>
+#include "util.h"
 
 void restriction(double **fine, double **crse, int N);
 void prolongation(double **crse, double **fine, int N);
@@ -58,8 +59,8 @@ int main (int argc, char **argv)
 			}	
 		}
 	}
-//  	timestamp_type time1, time2;
-//  	get_timestamp(&time1);
+  	timestamp_type time1, time2;
+  	get_timestamp(&time1);
 
 	int myid = 0;	
 #pragma omp parallel shared(x,rhs,m,hsq,invhsq,crit,maxiter) private(myid)
@@ -70,12 +71,14 @@ int main (int argc, char **argv)
      
 	  	vcycle(x,rhs,0,nlevel, m, hsq,invhsq);
 
-//	get_timestamp(&time2);
-//  	double elapsed = timestamp_diff_in_seconds(time1,time2);
-	
-	// print final output
-//	printf("Numer of iteration %li, residual = %10e, Time elapsed is %f secs. \n", n, sqrt(res), elapsed);
 	}
+
+      get_timestamp(&time2);
+      double elapsed = timestamp_diff_in_seconds(time1,time2);
+
+      // print final output
+      printf("Numer of iteration %li, residual = %10e, Time elapsed is %f secs. \n", n, sqrt(res), elapsed);
+
 
         for (n = 0; n < nlevel ; n++) {
 		for(i = 0; i < m2; i++) { 

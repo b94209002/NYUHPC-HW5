@@ -1,7 +1,7 @@
 mpc=mpicc
 CC=gcc
-FLAGS=-O3
-EXECS= MultiGrid_v_cycle MultiGrid_v_cycle_omp MultiGrid_v_cycle_mpi
+CFLAGS=-O3
+EXECS= MultiGrid_v_cycle_omp MultiGrid_v_cycle_mpi
 
 all: ${EXECS}
 

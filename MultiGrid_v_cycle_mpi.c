@@ -72,19 +72,20 @@ int main (int argc, char **argv)
 			}	
 		}
 	}
-//  	timestamp_type time1, time2;
-//  	get_timestamp(&time1);
-	int myid = 0;	
+        double  time1,time2;
+        time1 = MPI_Wtime();
+
  	res = residual(x[0],rhs[0],m[0],invhsq[0]); crit = 1.e-4*res; n = 0;
-        printf("myid = %li, residul = %10e \n", myid, res);
+        printf("myid = %li, residul = %10e \n", info.rank, res);
    
  	vcycle(x,rhs,0,nlevel, m, hsq,invhsq,info);
 
-//	get_timestamp(&time2);
-//  	double elapsed = timestamp_diff_in_seconds(time1,time2);
+        time2 = MPI_Wtime();
+        double elapsed = time2 - time1;
+        // print final output
+        printf("Numer of iteration %li, residual = %10e, Time elapsed is %f secs. \n", n, res, elapsed);
+
 	
-	// print final output
-//	printf("Numer of iteration %li, residual = %10e, Time elapsed is %f secs. \n", n, sqrt(res), elapsed);
 
         for (n = 0; n < nlevel ; n++) {
 		for(i = 0; i < m2; i++) { 

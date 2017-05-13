@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include "util.h"
 
 void restriction(double **fine, double **crse, int N);
 void prolongation(double **crse, double **fine, int N);
@@ -57,8 +58,8 @@ int main (int argc, char **argv)
 			}	
 		}
 	}
-//  	timestamp_type time1, time2;
-//  	get_timestamp(&time1);
+  	timestamp_type time1, time2;
+  	get_timestamp(&time1);
 	int myid = 0;	
  	res = residual(x[0],rhs[0],m[0],invhsq[0]); crit = 1.e-4*res; n = 0;
         printf("myid = %li, residul = %10e \n", myid, res);
@@ -66,8 +67,8 @@ int main (int argc, char **argv)
         for (n = 0; n< 2; n++) 
   		vcycle(x,rhs,0,nlevel, m, hsq,invhsq);
 
-//	get_timestamp(&time2);
-//  	double elapsed = timestamp_diff_in_seconds(time1,time2);
+	get_timestamp(&time2);
+  	double elapsed = timestamp_diff_in_seconds(time1,time2);
 	
 	// print final output
 //	printf("Numer of iteration %li, residual = %10e, Time elapsed is %f secs. \n", n, sqrt(res), elapsed);
