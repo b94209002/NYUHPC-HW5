@@ -22,12 +22,21 @@ Weak scaling tests with 9 level computation damian = 2560x2560x n threads.
 |---|---|---|---|---|---|
 |time | 3.7501 | 4.0582 | 5.1845 | 9.1484 | 18.4537 |
 
+We can observe that about N = 17M data the data reaches the bottle neck of memory access. 
 
+Hence for number of threads great than 8, the result doesn't scale.  
 
 3. MultiGrid_v_cycle_mpi: MPI parallelization version of MultiGrid 2D. 
 
 
+Weak Scaling 
 
+| N nodes  | 1 | 4 | 16 | 64 | 256 |
+|---|---|---|---|---|---|
+|time | 2.6645 | 3.6800 | 7.2071 | 7.2439 | - |
 
+Strong Scaling
 
-
+| N nodes  | 1 | 4 | 16 | 64 | 256 |
+|---|---|---|---|---|---|
+|time | 86.7919 | 32.5180 | 15.6227 | 3.9531 | - |
