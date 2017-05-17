@@ -43,7 +43,9 @@ Hence for number of threads great than 8, the result doesn't scale.
 3. MultiGrid_v_cycle_mpi: MPI parallelization version of MultiGrid 2D. 
 
 
-Weak Scaling 
+Weak Scaling  
+
+Weak Scaling tests 10 levels with same amount of grid points.
 
 | N nodes  | 1 | 4 | 16 | 64 | 256 |
 |---|---|---|---|---|---|
@@ -51,6 +53,8 @@ Weak Scaling
 
 Strong Scaling
 
+Strong Scaling tests 5 levels with same grids in the coarsest level. 
+
 | N nodes  | 1 | 4 | 16 | 64 | 256 |
 |---|---|---|---|---|---|
-|time | 86.7919 | 32.5180 | 15.6227 | 3.9531 | - |
+|time | 86.7919 | 32.5180 | 15.6227 | 3.9531 | 1.014222 |
